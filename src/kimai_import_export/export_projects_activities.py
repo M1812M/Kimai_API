@@ -173,8 +173,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--token-file",
         default=DEFAULT_TOKEN_FILE,
         help=(
-            "UTF-8 file containing the Kimai API token; otherwise use "
-            "KIMAI_TOKEN_FILE or KIMAI_API_TOKEN"
+            "UTF-8 file containing the raw Kimai API token; otherwise use "
+            "KIMAI_API_TOKEN, KIMAI_TOKEN_FILE, or ./kimai.env"
         ),
     )
     parser.add_argument("--timeout", type=float, default=30.0, help="HTTP timeout in seconds")

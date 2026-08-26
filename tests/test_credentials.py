@@ -43,7 +43,26 @@ class CredentialLoadingTests(unittest.TestCase):
             with patch.dict(os.environ, {"KIMAI_TOKEN_FILE": str(token_file)}, clear=True):
                 self.assertEqual("file-token", load_token())
 
+    def test_reads_raw_token_from_default_kimai_env_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            token_file = Path(temporary, "kimai.env")
+            token_file.write_text("raw-kimai-token\n", encoding="utf-8")
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                patch(
+                    "kimai_import_export.project_tasks.DEFAULT_LOCAL_TOKEN_FILE",
+                    token_file,
+                ),
+            ):
+                self.assertEqual("raw-kimai-token", load_token())
+
     def test_requires_an_explicit_credential_source(self) -> None:
-        with patch.dict(os.environ, {}, clear=True):
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch(
+                "kimai_import_export.project_tasks.DEFAULT_LOCAL_TOKEN_FILE",
+                Path("missing-kimai.env"),
+            ),
+        ):
             with self.assertRaisesRegex(ImportFailure, "No API token configured"):
                 load_token()

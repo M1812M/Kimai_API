@@ -5,6 +5,9 @@ Clockify to Kimai. It uses only the Python standard library at runtime.
 
 ## Tools
 
+- `python kimai_api.py import .\data\` is the main project/activity import
+  command. It previews by default and reads the raw Kimai token from
+  `kimai.env`.
 - `kimai-prepare-clockify-migration` reads Clockify and Kimai and creates the
   five local catalogs, mapping templates, and duplicate/unmapped audit report.
   It never changes either service.
@@ -25,7 +28,9 @@ The detailed migration procedure is in
 |-- tests/                     Unit tests with no live API calls
 |-- docs/                      Operational workflows
 |-- .github/workflows/         GitHub Actions test matrix
-|-- .env.example               Kimai credential/config template
+|-- kimai_api.py               Main Python script
+|-- data/                      Local project/activity CSV files
+|-- kimai.env.example          Raw Kimai credential template
 |-- clockify.env.example       Clockify credential template
 `-- pyproject.toml             Package metadata and command entry points
 ```
@@ -44,28 +49,50 @@ python -m venv .venv
 python -m pip install -e .
 ```
 
+## Import project and activity CSV files
+
+The root-level Python script works without using a generated `.exe` launcher.
+From the project folder, validate all CSV files without contacting Kimai:
+
+```powershell
+python kimai_api.py import .\data\ --offline
+```
+
+Run the live read-only preview to show only missing projects and activities:
+
+```powershell
+python kimai_api.py import .\data\
+```
+
+Nothing is created unless `--apply` is included. For example, after reviewing
+the preview, create non-billable missing records with:
+
+```powershell
+python kimai_api.py import .\data\ --non-billable --apply
+```
+
+Use `--billable` instead when the new records should be billable.
+
 ## Two separate API keys
 
 Keep the two credentials in separate, Git-ignored files in the project root:
 
 ```text
 clockify.env   CLOCKIFY-API=your-clockify-key
-.env           KIMAI_API_TOKEN=your-kimai-key
+kimai.env      your-raw-kimai-key
 ```
 
-The existing `clockify.env` remains the Clockify credential. Do not rename its
-`CLOCKIFY-API` key. Create the Kimai file from the safe template:
+The existing `clockify.env` remains the Clockify credential and keeps its
+`CLOCKIFY-API=` prefix. The Kimai file contains only the raw key, without
+`KIMAI_API_TOKEN=` or quotation marks:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item kimai.env.example kimai.env
 ```
 
-Then replace only the placeholder after `KIMAI_API_TOKEN=`. Optional
-`KIMAI_BASE_URL` and `KIMAI_CUSTOMER` settings in `.env` default to
-`https://time.cdintl.org` and `CDI`.
-
-Neither script prints or writes an API key. `clockify.env` is parsed as the
-single exact assignment shown above; `.env` is loaded locally for Kimai.
+Environment variables `KIMAI_API_TOKEN`, `KIMAI_TOKEN_FILE`, `KIMAI_BASE_URL`,
+and `KIMAI_CUSTOMER` remain optional alternatives. Neither script prints or
+writes an API key.
 
 ## Create the five migration files
 
@@ -118,6 +145,6 @@ Kimai.
 
 ## Versioning
 
-Changes are tracked with Git. Use annotated tags such as `v0.2.0` for tested
+Changes are tracked with Git. Use annotated tags such as `v0.2.1` for tested
 releases; the GitHub workflow runs compilation, unit tests, and command-help
 checks on pushes and pull requests.

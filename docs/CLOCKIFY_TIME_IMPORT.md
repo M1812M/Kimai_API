@@ -9,11 +9,12 @@ Store the two API keys separately in the project root:
 
 ```text
 clockify.env   CLOCKIFY-API=your-clockify-key
-.env           KIMAI_API_TOKEN=your-kimai-key
+kimai.env      your-raw-kimai-key
 ```
 
 Both files are excluded from Git. The existing `clockify.env` is read only as a
-Clockify credential and is never treated as a Kimai token.
+Clockify credential and is never treated as a Kimai token. `kimai.env` contains
+only the Kimai key, without a variable name or quotation marks.
 
 Choose the inclusive date range and run:
 
@@ -109,9 +110,10 @@ activities and existing timesheets. It blocks an import when a user has not
 registered, a project/activity does not exist or is hidden, team access cannot
 be confirmed, or a matching/possibly matching time entry already exists.
 
-The Kimai API token must belong to an administrator or another account permitted to
-read the required records. Keep `KIMAI_API_TOKEN` in the local, Git-ignored
-`.env` file. A separate `KIMAI_TOKEN_FILE` or `--token-file` remains supported.
+The Kimai API token must belong to an administrator or another account permitted
+to read the required records. Keep the raw token in the local, Git-ignored
+`kimai.env` file. `KIMAI_API_TOKEN`, `KIMAI_TOKEN_FILE`, and `--token-file`
+remain supported alternatives.
 
 ## First live import: small pilot
 

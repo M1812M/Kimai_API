@@ -41,6 +41,7 @@ DEFAULT_BASE_URL = os.environ.get("KIMAI_BASE_URL", "https://time.cdintl.org")
 DEFAULT_CUSTOMER = os.environ.get("KIMAI_CUSTOMER", "CDI")
 DEFAULT_CSV = "project-task-list.csv"
 DEFAULT_TOKEN_FILE: str | None = None
+DEFAULT_LOCAL_TOKEN_FILE = Path("kimai.env")
 MAX_ACTIVITY_LENGTH = 150
 SELECTED_MARKERS = {"☑", "✅", "✓", "✔", "true", "yes", "1", "x", "[x]"}
 UNSELECTED_MARKERS = {"", "☐", "false", "no", "0", "[ ]"}
@@ -325,12 +326,15 @@ def load_token(token_file: Path | None = None) -> str:
             return environment_token
 
         environment_token_file = os.environ.get("KIMAI_TOKEN_FILE", "").strip()
-        if not environment_token_file:
+        if environment_token_file:
+            token_file = Path(environment_token_file)
+        elif DEFAULT_LOCAL_TOKEN_FILE.is_file():
+            token_file = DEFAULT_LOCAL_TOKEN_FILE
+        else:
             raise ImportFailure(
-                "No API token configured. Use --token-file, KIMAI_TOKEN_FILE, "
-                "or KIMAI_API_TOKEN."
+                "No API token configured. Add the raw token to kimai.env, use "
+                "--token-file / KIMAI_TOKEN_FILE, or set KIMAI_API_TOKEN."
             )
-        token_file = Path(environment_token_file)
 
     try:
         token = token_file.read_text(encoding="utf-8-sig").strip()
@@ -809,8 +813,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--token-file",
         default=DEFAULT_TOKEN_FILE,
         help=(
-            "UTF-8 file containing the API token; otherwise use KIMAI_TOKEN_FILE "
-            "or KIMAI_API_TOKEN"
+            "UTF-8 file containing the raw Kimai API token; otherwise use "
+            "KIMAI_API_TOKEN, KIMAI_TOKEN_FILE, or ./kimai.env"
         ),
     )
     parser.add_argument(
@@ -839,13 +843,13 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if callable(reconfigure):
             reconfigure(encoding="utf-8", errors="replace")
     try:
-        return run(build_parser().parse_args())
+        return run(build_parser().parse_args(argv))
     except ImportFailure as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2

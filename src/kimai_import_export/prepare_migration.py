@@ -925,7 +925,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--kimai-customer", default=DEFAULT_CUSTOMER)
     parser.add_argument(
         "--kimai-token-file",
-        help="Kimai token file; otherwise use KIMAI_TOKEN_FILE or KIMAI_API_TOKEN",
+        help=(
+            "Raw Kimai token file; otherwise use KIMAI_API_TOKEN, "
+            "KIMAI_TOKEN_FILE, or ./kimai.env"
+        ),
     )
     parser.add_argument("--timeout", type=float, default=30.0)
     parser.add_argument(
