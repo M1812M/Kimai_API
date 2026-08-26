@@ -36,12 +36,12 @@ from urllib.request import Request, urlopen
 from .config import load_dotenv
 
 
+load_dotenv(Path.cwd() / ".env.kimai")
 load_dotenv()
 DEFAULT_BASE_URL = os.environ.get("KIMAI_BASE_URL", "https://time.cdintl.org")
 DEFAULT_CUSTOMER = os.environ.get("KIMAI_CUSTOMER", "CDI")
 DEFAULT_CSV = "project-task-list.csv"
 DEFAULT_TOKEN_FILE: str | None = None
-DEFAULT_LOCAL_TOKEN_FILE = Path("kimai.env")
 MAX_ACTIVITY_LENGTH = 150
 SELECTED_MARKERS = {"☑", "✅", "✓", "✔", "true", "yes", "1", "x", "[x]"}
 UNSELECTED_MARKERS = {"", "☐", "false", "no", "0", "[ ]"}
@@ -328,12 +328,10 @@ def load_token(token_file: Path | None = None) -> str:
         environment_token_file = os.environ.get("KIMAI_TOKEN_FILE", "").strip()
         if environment_token_file:
             token_file = Path(environment_token_file)
-        elif DEFAULT_LOCAL_TOKEN_FILE.is_file():
-            token_file = DEFAULT_LOCAL_TOKEN_FILE
         else:
             raise ImportFailure(
-                "No API token configured. Add the raw token to kimai.env, use "
-                "--token-file / KIMAI_TOKEN_FILE, or set KIMAI_API_TOKEN."
+                "No API token configured. Add KIMAI_API_TOKEN to .env.kimai, "
+                "use --token-file / KIMAI_TOKEN_FILE, or set KIMAI_API_TOKEN."
             )
 
     try:
@@ -814,7 +812,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_TOKEN_FILE,
         help=(
             "UTF-8 file containing the raw Kimai API token; otherwise use "
-            "KIMAI_API_TOKEN, KIMAI_TOKEN_FILE, or ./kimai.env"
+            "KIMAI_API_TOKEN, KIMAI_TOKEN_FILE, or ./.env.kimai"
         ),
     )
     parser.add_argument(

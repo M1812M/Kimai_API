@@ -38,7 +38,7 @@ from .project_tasks import (
 
 
 DEFAULT_CLOCKIFY_BASE_URL = "https://api.clockify.me/api/v1"
-DEFAULT_CLOCKIFY_ENV = "clockify.env"
+DEFAULT_CLOCKIFY_ENV = ".env.clockify"
 DEFAULT_OUTPUT_DIRECTORY = "clockify-migration"
 DEFAULT_UTC_OFFSET = "+06:00"
 
@@ -152,7 +152,7 @@ class UserSuggestion:
 
 
 def load_clockify_api_key(path: Path) -> str:
-    """Read the exact CLOCKIFY-API assignment without logging its value."""
+    """Read the exact CLOCKIFY_API_KEY assignment without logging its value."""
 
     try:
         text = path.read_text(encoding="utf-8-sig")
@@ -166,12 +166,12 @@ def load_clockify_api_key(path: Path) -> str:
     lines = text.splitlines()
     if len(lines) != 1:
         raise ImportFailure(
-            "Clockify credential file must contain exactly one CLOCKIFY-API=... line."
+            "Clockify credential file must contain exactly one CLOCKIFY_API_KEY=... line."
         )
     name, separator, api_key = lines[0].partition("=")
-    if separator != "=" or name != "CLOCKIFY-API" or not api_key:
+    if separator != "=" or name != "CLOCKIFY_API_KEY" or not api_key:
         raise ImportFailure(
-            "Clockify credential file must contain exactly CLOCKIFY-API=..."
+            "Clockify credential file must contain exactly CLOCKIFY_API_KEY=..."
         )
     if api_key != api_key.strip() or any(character.isspace() for character in api_key):
         raise ImportFailure("Clockify API key contains whitespace.")
@@ -927,7 +927,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--kimai-token-file",
         help=(
             "Raw Kimai token file; otherwise use KIMAI_API_TOKEN, "
-            "KIMAI_TOKEN_FILE, or ./kimai.env"
+            "KIMAI_TOKEN_FILE, or ./.env.kimai"
         ),
     )
     parser.add_argument("--timeout", type=float, default=30.0)

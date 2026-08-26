@@ -6,8 +6,8 @@ Clockify to Kimai. It uses only the Python standard library at runtime.
 ## Tools
 
 - `python kimai_api.py import .\data\` is the main project/activity import
-  command. It previews by default and reads the raw Kimai token from
-  `kimai.env`.
+  command. It previews by default and reads `KIMAI_API_TOKEN` from
+  `.env.kimai`.
 - `kimai-prepare-clockify-migration` reads Clockify and Kimai and creates the
   five local catalogs, mapping templates, and duplicate/unmapped audit report.
   It never changes either service.
@@ -30,8 +30,8 @@ The detailed migration procedure is in
 |-- .github/workflows/         GitHub Actions test matrix
 |-- kimai_api.py               Main Python script
 |-- data/                      Local project/activity CSV files
-|-- kimai.env.example          Raw Kimai credential template
-|-- clockify.env.example       Clockify credential template
+|-- .env.kimai.example        Kimai credential template
+|-- .env.clockify.example     Clockify credential template
 `-- pyproject.toml             Package metadata and command entry points
 ```
 
@@ -78,16 +78,16 @@ Use `--billable` instead when the new records should be billable.
 Keep the two credentials in separate, Git-ignored files in the project root:
 
 ```text
-clockify.env   CLOCKIFY-API=your-clockify-key
-kimai.env      your-raw-kimai-key
+.env.clockify   CLOCKIFY_API_KEY=your-clockify-key
+.env.kimai      KIMAI_API_TOKEN=your-kimai-key
 ```
 
-The existing `clockify.env` remains the Clockify credential and keeps its
-`CLOCKIFY-API=` prefix. The Kimai file contains only the raw key, without
-`KIMAI_API_TOKEN=` or quotation marks:
+Both use normal `KEY=value` dotenv syntax, without quotation marks. Create them
+from the tracked templates, then replace the placeholders locally:
 
 ```powershell
-Copy-Item kimai.env.example kimai.env
+Copy-Item .env.kimai.example .env.kimai
+Copy-Item .env.clockify.example .env.clockify
 ```
 
 Environment variables `KIMAI_API_TOKEN`, `KIMAI_TOKEN_FILE`, `KIMAI_BASE_URL`,
@@ -145,6 +145,6 @@ Kimai.
 
 ## Versioning
 
-Changes are tracked with Git. Use annotated tags such as `v0.2.3` for tested
+Changes are tracked with Git. Use annotated tags such as `v0.3.0` for tested
 releases; the GitHub workflow runs compilation, unit tests, and command-help
 checks on pushes and pull requests.

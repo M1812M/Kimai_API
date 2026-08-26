@@ -10,9 +10,12 @@ from typing import Sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 SOURCE_ROOT = PROJECT_ROOT / "src"
-KIMAI_TOKEN_FILE = PROJECT_ROOT / "kimai.env"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
+
+from kimai_import_export.config import load_dotenv  # noqa: E402
+
+load_dotenv(PROJECT_ROOT / ".env.kimai")
 
 from kimai_import_export import project_tasks  # noqa: E402
 
@@ -39,12 +42,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     command = arguments.pop(0)
     if command == "import":
-        if (
-            "--offline" not in arguments
-            and "--token-file" not in arguments
-            and KIMAI_TOKEN_FILE.is_file()
-        ):
-            arguments.extend(("--token-file", str(KIMAI_TOKEN_FILE)))
         return project_tasks.main(arguments)
 
     print(f"ERROR: unknown command {command!r}.\n\n{HELP}", file=sys.stderr)
