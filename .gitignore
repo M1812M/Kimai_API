@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Credentials and local configuration
+.env
+.env.*
+*.env
+!.env.example
+!clockify.env.example
+*.key
+*.pem
+*.token
+*token*.txt
+secrets/
+
+# Operational inputs and generated output may contain personal data
+clockify-migration/
+data/
+outputs/
+*.csv
+*.xlsx
+*.xls
+*.pdf
+*.log
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

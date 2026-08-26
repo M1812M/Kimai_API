@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kimai-import-export"
+version = "0.2.0"
+description = "Preview-first API scripts for CDI Kimai imports and exports"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+
+[project.scripts]
+kimai-export = "kimai_import_export.export_projects_activities:main"
+kimai-import-clockify = "kimai_import_export.clockify_times:main"
+kimai-import-project-tasks = "kimai_import_export.project_tasks:main"
+kimai-prepare-clockify-migration = "kimai_import_export.prepare_migration:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.format]
+line-ending = "lf"
