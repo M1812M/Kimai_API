@@ -56,6 +56,23 @@ class CredentialLoadingTests(unittest.TestCase):
             ):
                 self.assertEqual("raw-kimai-token", load_token())
 
+    def test_local_kimai_env_overrides_environment_token(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            token_file = Path(temporary, "kimai.env")
+            token_file.write_text("raw-kimai-token\n", encoding="utf-8")
+            with (
+                patch.dict(
+                    os.environ,
+                    {"KIMAI_API_TOKEN": "stale-environment-token"},
+                    clear=True,
+                ),
+                patch(
+                    "kimai_import_export.project_tasks.DEFAULT_LOCAL_TOKEN_FILE",
+                    token_file,
+                ),
+            ):
+                self.assertEqual("raw-kimai-token", load_token())
+
     def test_requires_an_explicit_credential_source(self) -> None:
         with (
             patch.dict(os.environ, {}, clear=True),
