@@ -145,6 +145,6 @@ Kimai.
 
 ## Versioning
 
-Changes are tracked with Git. Use annotated tags such as `v0.2.2` for tested
+Changes are tracked with Git. Use annotated tags such as `v0.2.3` for tested
 releases; the GitHub workflow runs compilation, unit tests, and command-help
 checks on pushes and pull requests.

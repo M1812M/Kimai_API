@@ -319,23 +319,22 @@ def find_csv_files(source_path: Path) -> tuple[Path, ...]:
 
 def load_token(token_file: Path | None = None) -> str:
     if token_file is None:
-        if DEFAULT_LOCAL_TOKEN_FILE.is_file():
+        environment_token = os.environ.get("KIMAI_API_TOKEN", "").strip()
+        if environment_token:
+            if any(character.isspace() for character in environment_token):
+                raise ImportFailure("KIMAI_API_TOKEN contains whitespace.")
+            return environment_token
+
+        environment_token_file = os.environ.get("KIMAI_TOKEN_FILE", "").strip()
+        if environment_token_file:
+            token_file = Path(environment_token_file)
+        elif DEFAULT_LOCAL_TOKEN_FILE.is_file():
             token_file = DEFAULT_LOCAL_TOKEN_FILE
         else:
-            environment_token = os.environ.get("KIMAI_API_TOKEN", "").strip()
-            if environment_token:
-                if any(character.isspace() for character in environment_token):
-                    raise ImportFailure("KIMAI_API_TOKEN contains whitespace.")
-                return environment_token
-
-            environment_token_file = os.environ.get("KIMAI_TOKEN_FILE", "").strip()
-            if environment_token_file:
-                token_file = Path(environment_token_file)
-            else:
-                raise ImportFailure(
-                    "No API token configured. Add the raw token to kimai.env, use "
-                    "--token-file / KIMAI_TOKEN_FILE, or set KIMAI_API_TOKEN."
-                )
+            raise ImportFailure(
+                "No API token configured. Add the raw token to kimai.env, use "
+                "--token-file / KIMAI_TOKEN_FILE, or set KIMAI_API_TOKEN."
+            )
 
     try:
         token = token_file.read_text(encoding="utf-8-sig").strip()
