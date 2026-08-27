@@ -5,16 +5,17 @@ existing Kimai data. It does **not** create users, projects or activities.
 
 ## Direct API preparation
 
-Store the two API keys separately in the project root:
+Store both API keys in the shared `.env` file in the project root:
 
 ```text
-.env.clockify   CLOCKIFY_API_KEY=your-clockify-key
-.env.kimai      KIMAI_API_TOKEN=your-kimai-key
+KIMAI_API_TOKEN=your-kimai-key
+KIMAI_BASE_URL=https://time.cdintl.org
+KIMAI_CUSTOMER=CDI
+CLOCKIFY_API_KEY=your-clockify-key
 ```
 
-Both files are excluded from Git and use normal `KEY=value` dotenv syntax.
-`.env.clockify` is read only as a Clockify credential and is never treated as a
-Kimai token.
+The file is excluded from Git and uses normal `KEY=value` dotenv syntax. Each
+service reads only its own named variable.
 
 Choose the inclusive date range and run:
 
@@ -112,7 +113,7 @@ be confirmed, or a matching/possibly matching time entry already exists.
 
 The Kimai API token must belong to an administrator or another account permitted
 to read the required records. Keep the raw token in the local, Git-ignored
-`.env.kimai` file. `KIMAI_API_TOKEN`, `KIMAI_TOKEN_FILE`, and `--token-file`
+`.env` file. `KIMAI_API_TOKEN`, `KIMAI_TOKEN_FILE`, and `--token-file`
 remain supported alternatives.
 
 ## First live import: small pilot

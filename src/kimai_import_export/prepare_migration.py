@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ from .clockify_times import (
     source_pair_key,
     write_csv,
 )
+from .config import load_dotenv
 from .export_projects_activities import collect_catalog, write_catalog
 from .project_tasks import (
     DEFAULT_BASE_URL,
@@ -38,7 +40,7 @@ from .project_tasks import (
 
 
 DEFAULT_CLOCKIFY_BASE_URL = "https://api.clockify.me/api/v1"
-DEFAULT_CLOCKIFY_ENV = ".env.clockify"
+DEFAULT_CLOCKIFY_ENV = ".env"
 DEFAULT_OUTPUT_DIRECTORY = "clockify-migration"
 DEFAULT_UTC_OFFSET = "+06:00"
 
@@ -152,28 +154,15 @@ class UserSuggestion:
 
 
 def load_clockify_api_key(path: Path) -> str:
-    """Read the exact CLOCKIFY_API_KEY assignment without logging its value."""
+    """Load CLOCKIFY_API_KEY from the shared dotenv file without logging it."""
 
-    try:
-        text = path.read_text(encoding="utf-8-sig")
-    except FileNotFoundError as exc:
-        raise ImportFailure(f"Clockify credential file not found: {path}") from exc
-    except PermissionError as exc:
-        raise ImportFailure(f"Cannot read the Clockify credential file: {path}") from exc
-    except UnicodeDecodeError as exc:
-        raise ImportFailure(f"Clockify credential file is not valid UTF-8: {path}") from exc
-
-    lines = text.splitlines()
-    if len(lines) != 1:
-        raise ImportFailure(
-            "Clockify credential file must contain exactly one CLOCKIFY_API_KEY=... line."
-        )
-    name, separator, api_key = lines[0].partition("=")
-    if separator != "=" or name != "CLOCKIFY_API_KEY" or not api_key:
-        raise ImportFailure(
-            "Clockify credential file must contain exactly CLOCKIFY_API_KEY=..."
-        )
-    if api_key != api_key.strip() or any(character.isspace() for character in api_key):
+    if not path.is_file():
+        raise ImportFailure(f"Clockify credential file not found: {path}")
+    load_dotenv(path)
+    api_key = os.environ.get("CLOCKIFY_API_KEY", "").strip()
+    if not api_key:
+        raise ImportFailure(f"CLOCKIFY_API_KEY is missing from {path}.")
+    if any(character.isspace() for character in api_key):
         raise ImportFailure("Clockify API key contains whitespace.")
     return api_key
 
@@ -927,7 +916,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--kimai-token-file",
         help=(
             "Raw Kimai token file; otherwise use KIMAI_API_TOKEN, "
-            "KIMAI_TOKEN_FILE, or ./.env.kimai"
+            "KIMAI_TOKEN_FILE, or ./.env"
         ),
     )
     parser.add_argument("--timeout", type=float, default=30.0)

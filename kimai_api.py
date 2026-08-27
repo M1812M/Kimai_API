@@ -15,14 +15,17 @@ if str(SOURCE_ROOT) not in sys.path:
 
 from kimai_import_export.config import load_dotenv  # noqa: E402
 
-load_dotenv(PROJECT_ROOT / ".env.kimai")
+load_dotenv(PROJECT_ROOT / ".env")
 
-from kimai_import_export import project_tasks  # noqa: E402
+from kimai_import_export import clockify_backup, project_tasks  # noqa: E402
 
 
 HELP = """\
 Usage:
   python kimai_api.py import <csv-file-or-folder> [options]
+  python kimai_api.py backup-clockify [options]
+  python kimai_api.py backup-clockify --resume <backup-directory>
+  python kimai_api.py verify-clockify-backup <backup-directory>
 
 Examples:
   python kimai_api.py import .\\data\\ --offline
@@ -31,6 +34,9 @@ Examples:
 
 The default import is a read-only Kimai preview. Data is created only when
 --apply and either --billable or --non-billable are supplied.
+
+Clockify backup commands are strictly read-only and store data under
+.\\data\\clockify-backups by default.
 """
 
 
@@ -43,6 +49,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     command = arguments.pop(0)
     if command == "import":
         return project_tasks.main(arguments)
+    if command == "backup-clockify":
+        return clockify_backup.backup_main(arguments)
+    if command == "verify-clockify-backup":
+        return clockify_backup.verify_main(arguments)
 
     print(f"ERROR: unknown command {command!r}.\n\n{HELP}", file=sys.stderr)
     return 2

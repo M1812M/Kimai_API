@@ -41,6 +41,20 @@ class KimaiApiScriptTests(unittest.TestCase):
         self.assertEqual(2, result)
         self.assertIn("unknown command", output.getvalue())
 
+    @patch("kimai_api.clockify_backup.backup_main", return_value=0)
+    def test_backup_command_forwards_arguments(self, mocked_main):
+        result = kimai_api.main(["backup-clockify", "--workspace-id", "ws1"])
+
+        self.assertEqual(0, result)
+        mocked_main.assert_called_once_with(["--workspace-id", "ws1"])
+
+    @patch("kimai_api.clockify_backup.verify_main", return_value=0)
+    def test_verify_command_forwards_arguments(self, mocked_main):
+        result = kimai_api.main(["verify-clockify-backup", ".\\data\\run"])
+
+        self.assertEqual(0, result)
+        mocked_main.assert_called_once_with([".\\data\\run"])
+
 
 if __name__ == "__main__":
     unittest.main()

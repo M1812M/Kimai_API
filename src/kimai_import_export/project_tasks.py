@@ -36,7 +36,6 @@ from urllib.request import Request, urlopen
 from .config import load_dotenv
 
 
-load_dotenv(Path.cwd() / ".env.kimai")
 load_dotenv()
 DEFAULT_BASE_URL = os.environ.get("KIMAI_BASE_URL", "https://time.cdintl.org")
 DEFAULT_CUSTOMER = os.environ.get("KIMAI_CUSTOMER", "CDI")
@@ -330,7 +329,7 @@ def load_token(token_file: Path | None = None) -> str:
             token_file = Path(environment_token_file)
         else:
             raise ImportFailure(
-                "No API token configured. Add KIMAI_API_TOKEN to .env.kimai, "
+                "No API token configured. Add KIMAI_API_TOKEN to .env, "
                 "use --token-file / KIMAI_TOKEN_FILE, or set KIMAI_API_TOKEN."
             )
 
@@ -812,7 +811,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_TOKEN_FILE,
         help=(
             "UTF-8 file containing the raw Kimai API token; otherwise use "
-            "KIMAI_API_TOKEN, KIMAI_TOKEN_FILE, or ./.env.kimai"
+            "KIMAI_API_TOKEN, KIMAI_TOKEN_FILE, or ./.env"
         ),
     )
     parser.add_argument(

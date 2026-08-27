@@ -43,9 +43,9 @@ class CredentialLoadingTests(unittest.TestCase):
             with patch.dict(os.environ, {"KIMAI_TOKEN_FILE": str(token_file)}, clear=True):
                 self.assertEqual("file-token", load_token())
 
-    def test_loads_named_kimai_dotenv_for_token_lookup(self) -> None:
+    def test_loads_shared_dotenv_for_token_lookup(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            environment_file = Path(temporary, ".env.kimai")
+            environment_file = Path(temporary, ".env")
             environment_file.write_text(
                 "KIMAI_API_TOKEN=dotenv-kimai-token\n", encoding="utf-8"
             )

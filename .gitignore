@@ -17,6 +17,7 @@ venv/
 *.pem
 *.token
 *token*.txt
+KEYS.txt
 secrets/
 
 # Operational inputs and generated output may contain personal data

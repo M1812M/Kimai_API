@@ -5,9 +5,13 @@ Clockify to Kimai. It uses only the Python standard library at runtime.
 
 ## Tools
 
+- `python kimai_api.py backup-clockify` creates a complete, local, read-only
+  emergency backup of every Clockify workspace accessible to the API key.
+- `python kimai_api.py verify-clockify-backup <folder>` verifies checksums,
+  archive readability, normalized data, references, and core completeness
+  without contacting Clockify or Kimai.
 - `python kimai_api.py import .\data\` is the main project/activity import
-  command. It previews by default and reads `KIMAI_API_TOKEN` from
-  `.env.kimai`.
+  command. It previews by default and reads `KIMAI_API_TOKEN` from `.env`.
 - `kimai-prepare-clockify-migration` reads Clockify and Kimai and creates the
   five local catalogs, mapping templates, and duplicate/unmapped audit report.
   It never changes either service.
@@ -29,9 +33,8 @@ The detailed migration procedure is in
 |-- docs/                      Operational workflows
 |-- .github/workflows/         GitHub Actions test matrix
 |-- kimai_api.py               Main Python script
-|-- data/                      Local project/activity CSV files
-|-- .env.kimai.example        Kimai credential template
-|-- .env.clockify.example     Clockify credential template
+|-- data/                      Git-ignored inputs and Clockify backups
+|-- .env                       Git-ignored Clockify and Kimai configuration
 `-- pyproject.toml             Package metadata and command entry points
 ```
 
@@ -73,30 +76,50 @@ python kimai_api.py import .\data\ --non-billable --apply
 
 Use `--billable` instead when the new records should be billable.
 
-## Two separate API keys
+## API configuration
 
-Keep the two credentials in separate, Git-ignored files in the project root:
+Keep both credentials in the one Git-ignored `.env` file in the project root:
 
 ```text
-.env.clockify   CLOCKIFY_API_KEY=your-clockify-key
-.env.kimai      KIMAI_API_TOKEN=your-kimai-key
+KIMAI_API_TOKEN=your-kimai-key
+KIMAI_BASE_URL=https://time.cdintl.org
+KIMAI_CUSTOMER=CDI
+CLOCKIFY_API_KEY=your-clockify-key
 ```
 
-Both use normal `KEY=value` dotenv syntax, without quotation marks. Create them
-from the tracked templates, then replace the placeholders locally:
+Use normal `KEY=value` syntax, without Markdown links or backslashes. The file
+is never committed, and neither command prints or writes either API key.
+
+## Complete Clockify emergency backup
+
+Start the backup from the project folder. No virtual-environment activation is
+needed when `python` already works on the computer:
 
 ```powershell
-Copy-Item .env.kimai.example .env.kimai
-Copy-Item .env.clockify.example .env.clockify
+python kimai_api.py backup-clockify
 ```
 
-Environment variables `KIMAI_API_TOKEN`, `KIMAI_TOKEN_FILE`, `KIMAI_BASE_URL`,
-and `KIMAI_CUSTOMER` remain optional alternatives. Neither script prints or
-writes an API key.
+The default destination is `data\clockify-backups\<UTC-run-id>`. The command
+also creates a sibling ZIP and SHA-256 file. A partial result is preserved and
+returns exit code `3`; continue it with:
+
+```powershell
+python kimai_api.py backup-clockify --resume .\data\clockify-backups\<run-id>
+```
+
+Verify a completed or partial backup entirely offline:
+
+```powershell
+python kimai_api.py verify-clockify-backup .\data\clockify-backups\<run-id>
+```
+
+The detailed data scope, status rules, and manual Clockify safety exports are
+documented in [`docs/CLOCKIFY_BACKUP.md`](docs/CLOCKIFY_BACKUP.md).
 
 ## Create the five migration files
 
-Choose the inclusive historical date range to audit, then run:
+After preserving the emergency backup, choose the inclusive historical date
+range to audit, then run:
 
 ```powershell
 kimai-prepare-clockify-migration `
@@ -116,8 +139,9 @@ The command makes GET requests only. Suggested matches stay at `Status=review`;
 review them before changing any rows to `approved`. Existing output files are
 not overwritten unless `--replace` is explicitly supplied.
 
-Use `--workspace-id` if the Clockify key's active workspace is not the intended
-one. Use `--clockify-base-url` for a regional Clockify API URL. The default
+The preparation command reads both keys from `.env`. Use `--workspace-id` if
+the Clockify key's active workspace is not the intended one. Use
+`--clockify-base-url` for a regional Clockify API URL. The default
 wall-clock offset is `+06:00`; override it with `--utc-offset` when needed.
 
 ## Safe import workflow
@@ -145,6 +169,6 @@ Kimai.
 
 ## Versioning
 
-Changes are tracked with Git. Use annotated tags such as `v0.3.0` for tested
+Changes are tracked with Git. Use annotated tags such as `v0.4.0` for tested
 releases; the GitHub workflow runs compilation, unit tests, and command-help
 checks on pushes and pull requests.

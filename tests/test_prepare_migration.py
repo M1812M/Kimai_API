@@ -48,15 +48,17 @@ class ClockifyCredentialTests(unittest.TestCase):
             path = Path(temporary, ".env.clockify")
             path.write_text("CLOCKIFY_API_KEY=test-key\n", encoding="utf-8")
 
-            self.assertEqual("test-key", load_clockify_api_key(path))
+            with patch.dict(os.environ, {}, clear=True):
+                self.assertEqual("test-key", load_clockify_api_key(path))
 
     def test_rejects_a_kimai_assignment_in_clockify_file(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary, ".env.clockify")
             path.write_text("KIMAI_API_TOKEN=test-key\n", encoding="utf-8")
 
-            with self.assertRaisesRegex(ImportFailure, "CLOCKIFY_API_KEY"):
-                load_clockify_api_key(path)
+            with patch.dict(os.environ, {}, clear=True):
+                with self.assertRaisesRegex(ImportFailure, "CLOCKIFY_API_KEY"):
+                    load_clockify_api_key(path)
 
 
 class ClockifyApiTests(unittest.TestCase):
@@ -300,8 +302,13 @@ class PreparationWorkflowTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            credential = root / ".env.clockify"
-            credential.write_text("CLOCKIFY_API_KEY=fake-key\n", encoding="utf-8")
+            credential = root / ".env"
+            credential.write_text(
+                "KIMAI_API_TOKEN=fake-kimai\n"
+                "KIMAI_BASE_URL=https://time.example.org\n"
+                "CLOCKIFY_API_KEY=fake-key\n",
+                encoding="utf-8",
+            )
             output = root / "migration"
             args = build_parser().parse_args(
                 [

@@ -31,3 +31,5 @@ jobs:
           kimai-import-clockify --help
           kimai-import-project-tasks --help
           kimai-prepare-clockify-migration --help
+          clockify-backup --help
+          clockify-verify-backup --help

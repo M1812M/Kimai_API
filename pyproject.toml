@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kimai-import-export"
-version = "0.3.0"
+version = "0.4.0"
 description = "Preview-first API scripts for CDI Kimai imports and exports"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }
@@ -14,6 +14,8 @@ kimai-export = "kimai_import_export.export_projects_activities:main"
 kimai-import-clockify = "kimai_import_export.clockify_times:main"
 kimai-import-project-tasks = "kimai_import_export.project_tasks:main"
 kimai-prepare-clockify-migration = "kimai_import_export.prepare_migration:main"
+clockify-backup = "kimai_import_export.clockify_backup:backup_main"
+clockify-verify-backup = "kimai_import_export.clockify_backup:verify_main"
 
 [tool.setuptools]
 py-modules = ["kimai_api"]
