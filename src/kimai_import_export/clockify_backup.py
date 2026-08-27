@@ -104,6 +104,7 @@ SAFE_SEGMENT_PATTERN = re.compile(r"[^A-Za-z0-9._-]+")
 POST_ALLOWLIST = (
     re.compile(r"^/v1/workspaces/[^/]+/reports/(?:detailed|expenses/detailed)$"),
     re.compile(r"^/v1/workspaces/[^/]+/audit-log$"),
+    re.compile(r"^/api/v1/workspaces/[^/]+/users/info$"),
     re.compile(r"^/api/v1/workspaces/[^/]+/time-off/requests$"),
     re.compile(r"^/api/v1/workspaces/[^/]+/scheduling/assignments/projects/totals$"),
 )
@@ -1020,7 +1021,7 @@ def fetch_detailed_report_adaptive(
                 f"workspaces/{workspace_id}/reports/detailed",
                 base="reports",
                 body=csv_body,
-                accept="text/csv,application/zip,application/octet-stream",
+                accept="*/*",
             )
             extension = ".zip" if response.body.startswith(b"PK") else ".csv"
             path = session._store_response(
@@ -1047,7 +1048,39 @@ def fetch_entity_changes_adaptive(
     end: datetime,
     *,
     namespace: str = "entity-changes",
+    capability_probe: bool = True,
 ) -> list[dict[str, Any]]:
+    if capability_probe and end - start > timedelta(days=1):
+        probe_start = max(start, end - timedelta(days=1))
+        probe_rows = fetch_entity_changes_adaptive(
+            session,
+            workspace_id,
+            change_kind,
+            probe_start,
+            end,
+            namespace=namespace,
+            capability_probe=False,
+        )
+        probe_key = (
+            f"{workspace_id}/{namespace}/{change_kind}/"
+            f"{_range_label(probe_start, end)}"
+        )
+        if session.manifest["datasets"].get(probe_key, {}).get("status") != "complete":
+            return probe_rows
+        return deduplicate(
+            [
+                *fetch_entity_changes_adaptive(
+                    session,
+                    workspace_id,
+                    change_kind,
+                    start,
+                    end,
+                    namespace=namespace,
+                    capability_probe=False,
+                ),
+                *probe_rows,
+            ]
+        )
     label = _range_label(start, end)
     key = f"{workspace_id}/{namespace}/{change_kind}/{label}"
     try:
@@ -1085,6 +1118,7 @@ def fetch_entity_changes_adaptive(
                     start,
                     midpoint,
                     namespace=namespace,
+                    capability_probe=False,
                 ),
                 *fetch_entity_changes_adaptive(
                     session,
@@ -1093,6 +1127,7 @@ def fetch_entity_changes_adaptive(
                     midpoint,
                     end,
                     namespace=namespace,
+                    capability_probe=False,
                 ),
             ]
         )
@@ -1103,7 +1138,33 @@ def fetch_audit_log_adaptive(
     workspace_id: str,
     start: datetime,
     end: datetime,
+    *,
+    capability_probe: bool = True,
 ) -> list[dict[str, Any]]:
+    if capability_probe and end - start > timedelta(days=1):
+        probe_start = max(start, end - timedelta(days=1))
+        probe_rows = fetch_audit_log_adaptive(
+            session,
+            workspace_id,
+            probe_start,
+            end,
+            capability_probe=False,
+        )
+        probe_key = f"{workspace_id}/audit-log/{_range_label(probe_start, end)}"
+        if session.manifest["datasets"].get(probe_key, {}).get("status") != "complete":
+            return probe_rows
+        return deduplicate(
+            [
+                *fetch_audit_log_adaptive(
+                    session,
+                    workspace_id,
+                    start,
+                    end,
+                    capability_probe=False,
+                ),
+                *probe_rows,
+            ]
+        )
     label = _range_label(start, end)
     key = f"{workspace_id}/audit-log/{label}"
     try:
@@ -1137,8 +1198,20 @@ def fetch_audit_log_adaptive(
         midpoint, _ = _split_range(start, end)
         return deduplicate(
             [
-                *fetch_audit_log_adaptive(session, workspace_id, start, midpoint),
-                *fetch_audit_log_adaptive(session, workspace_id, midpoint, end),
+                *fetch_audit_log_adaptive(
+                    session,
+                    workspace_id,
+                    start,
+                    midpoint,
+                    capability_probe=False,
+                ),
+                *fetch_audit_log_adaptive(
+                    session,
+                    workspace_id,
+                    midpoint,
+                    end,
+                    capability_probe=False,
+                ),
             ]
         )
 
@@ -1351,6 +1424,30 @@ def backup_workspace(
         core=True,
         params={"status": "ALL", "includeRoles": "true", "memberships": "ALL"},
     )
+    detailed_users = session.fetch_post_collection(
+        f"{prefix}/users-info",
+        workspace_id,
+        f"workspaces/{workspace_id}/users/info",
+        body={
+            "status": "ALL",
+            "includeRoles": True,
+            "memberships": "ALL",
+            "sortColumn": "ID",
+            "sortOrder": "ASCENDING",
+        },
+        core=False,
+        base="api",
+        item_keys=("users",),
+        page_size=200,
+    )
+    users_by_id = {
+        object_id(item): item for item in detailed_users if object_id(item)
+    }
+    for user in users:
+        detail = users_by_id.pop(object_id(user), None)
+        if detail:
+            user.update(detail)
+    users = deduplicate([*users, *users_by_id.values()])
     clients = deduplicate(
         [
             *session.fetch_collection(
@@ -1453,12 +1550,6 @@ def backup_workspace(
         user_id = object_id(user)
         if not user_id:
             continue
-        session.fetch_json(
-            f"{prefix}/user-profile/{safe_segment(user_id)}",
-            workspace_id,
-            f"workspaces/{workspace_id}/users/{user_id}",
-            core=False,
-        )
         all_time_entries.extend(
             fetch_time_entries_adaptive(
                 session, workspace_id, user_id, EARLIEST, cutoff
