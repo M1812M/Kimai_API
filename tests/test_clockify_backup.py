@@ -15,6 +15,7 @@ from kimai_import_export.clockify_backup import (
     HttpFailure,
     ReadOnlyClockifyClient,
     ReadOnlyViolation,
+    atomic_write,
     deduplicate,
     extract_items,
     finalize_backup,
@@ -110,6 +111,27 @@ class ReadOnlyClientTests(unittest.TestCase):
 
 
 class BackupSessionTests(unittest.TestCase):
+    @patch("kimai_import_export.clockify_backup.time.sleep")
+    def test_atomic_write_retries_a_temporary_windows_file_lock(self, mocked_sleep):
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary, "manifest.json")
+            original_replace = Path.replace
+            attempts = 0
+
+            def flaky_replace(source, destination):
+                nonlocal attempts
+                attempts += 1
+                if attempts == 1:
+                    raise PermissionError("temporarily locked")
+                return original_replace(source, destination)
+
+            with patch.object(Path, "replace", autospec=True, side_effect=flaky_replace):
+                atomic_write(target, b"preserved")
+
+            self.assertEqual(b"preserved", target.read_bytes())
+            self.assertEqual(2, attempts)
+            mocked_sleep.assert_called_once_with(0.05)
+
     def test_last_page_pagination_and_resume_checkpoint(self):
         with tempfile.TemporaryDirectory() as temporary:
             run_dir = Path(temporary, "run")

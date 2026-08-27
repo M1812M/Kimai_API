@@ -210,11 +210,22 @@ def safe_segment(value: str) -> str:
     return segment or "unknown"
 
 
+def replace_with_retry(source: Path, target: Path) -> None:
+    for attempt in range(10):
+        try:
+            source.replace(target)
+            return
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(0.05 * (attempt + 1))
+
+
 def atomic_write(path: Path, content: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".part")
     temporary.write_bytes(content)
-    temporary.replace(path)
+    replace_with_retry(temporary, path)
 
 
 def atomic_json(path: Path, value: Any) -> None:
@@ -1324,7 +1335,7 @@ def normalize_workspace(
                     ),
                 }
             )
-    temporary.replace(csv_path)
+    replace_with_retry(temporary, csv_path)
 
 
 def _asset_extension(content_type: str, fallback: str) -> str:
@@ -2019,7 +2030,7 @@ def create_archive(run_dir: Path) -> tuple[Path, Path]:
         for path in sorted(run_dir.rglob("*")):
             if path.is_file() and not path.name.endswith(".part"):
                 archive.write(path, path.relative_to(run_dir).as_posix())
-    temporary.replace(archive_path)
+    replace_with_retry(temporary, archive_path)
     hash_path = archive_path.with_suffix(archive_path.suffix + ".sha256")
     atomic_write(
         hash_path,
