@@ -229,6 +229,9 @@ class BackupSessionTests(unittest.TestCase):
 
     def test_audit_log_uses_all_documented_actions_and_null_authors(self):
         class FakeSession:
+            def load_completed_items(self, *args, **kwargs):
+                return None
+
             def fetch_post_collection(self, *args, **kwargs):
                 self.kwargs = kwargs
                 return [{"id": "audit-1"}]
@@ -248,6 +251,9 @@ class BackupSessionTests(unittest.TestCase):
 
     def test_entity_changes_start_at_page_zero_and_response_wrapper_is_read(self):
         class FakeSession:
+            def load_completed_items(self, *args, **kwargs):
+                return None
+
             def fetch_collection(self, *args, **kwargs):
                 self.kwargs = kwargs
                 return extract_items({"response": [{"id": "deleted-1"}]})
@@ -274,6 +280,9 @@ class BackupSessionTests(unittest.TestCase):
                 self.calls += 1
                 raise HttpFailure(400, "POST", "audit-log", "not available")
 
+            def load_completed_items(self, *args, **kwargs):
+                return None
+
             def _record_gap(self, key, *args, **kwargs):
                 self.manifest["datasets"][key] = {"status": "failed"}
 
@@ -293,6 +302,9 @@ class BackupSessionTests(unittest.TestCase):
             def __init__(self):
                 self.calls = 0
 
+            def load_completed_items(self, *args, **kwargs):
+                return None
+
             def fetch_collection(self, *args, **kwargs):
                 self.calls += 1
                 return [{"id": f"change-{self.calls}"}]
@@ -304,7 +316,7 @@ class BackupSessionTests(unittest.TestCase):
             "ws1",
             "created",
             start,
-            start + timedelta(days=366 * 4),
+            start + timedelta(days=92 * 4),
             capability_probe=False,
         )
 

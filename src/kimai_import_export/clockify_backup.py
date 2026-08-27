@@ -35,7 +35,7 @@ DEFAULT_OUTPUT_ROOT = Path("data") / "clockify-backups"
 EARLIEST = datetime(1970, 1, 1, tzinfo=timezone.utc)
 PAGE_SIZE = 200
 REPORT_PAGE_SIZE = 1000
-MAX_CHANGE_RANGE = timedelta(days=366)
+MAX_CHANGE_RANGE = timedelta(days=92)
 ENTITY_TYPES = (
     "CLIENTS",
     "PROJECTS",
@@ -1093,6 +1093,11 @@ def fetch_entity_changes_adaptive(
                 *probe_rows,
             ]
         )
+    label = _range_label(start, end)
+    key = f"{workspace_id}/{namespace}/{change_kind}/{label}"
+    completed = session.load_completed_items(key)
+    if completed is not None:
+        return deduplicate(completed)
     if end - start > MAX_CHANGE_RANGE:
         midpoint, _ = _split_range(start, end)
         return deduplicate(
@@ -1117,8 +1122,6 @@ def fetch_entity_changes_adaptive(
                 ),
             ]
         )
-    label = _range_label(start, end)
-    key = f"{workspace_id}/{namespace}/{change_kind}/{label}"
     try:
         return session.fetch_collection(
             key,
@@ -1201,6 +1204,13 @@ def fetch_audit_log_adaptive(
                 *probe_rows,
             ]
         )
+    label = _range_label(start, end)
+    key = f"{workspace_id}/audit-log/{label}"
+    completed = session.load_completed_items(
+        key, item_keys=("response", "auditLog", "items", "data")
+    )
+    if completed is not None:
+        return deduplicate(completed)
     if end - start > MAX_CHANGE_RANGE:
         midpoint, _ = _split_range(start, end)
         return deduplicate(
@@ -1221,8 +1231,6 @@ def fetch_audit_log_adaptive(
                 ),
             ]
         )
-    label = _range_label(start, end)
-    key = f"{workspace_id}/audit-log/{label}"
     try:
         return session.fetch_post_collection(
             key,
