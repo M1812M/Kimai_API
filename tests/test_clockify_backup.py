@@ -288,6 +288,29 @@ class BackupSessionTests(unittest.TestCase):
         self.assertEqual([], rows)
         self.assertEqual(1, session.calls)
 
+    def test_entity_changes_use_bounded_historical_windows(self):
+        class FakeSession:
+            def __init__(self):
+                self.calls = 0
+
+            def fetch_collection(self, *args, **kwargs):
+                self.calls += 1
+                return [{"id": f"change-{self.calls}"}]
+
+        session = FakeSession()
+        start = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        rows = fetch_entity_changes_adaptive(
+            session,
+            "ws1",
+            "created",
+            start,
+            start + timedelta(days=366 * 4),
+            capability_probe=False,
+        )
+
+        self.assertEqual(4, len(rows))
+        self.assertEqual(4, session.calls)
+
     def test_webhook_response_is_redacted_before_disk(self):
         with tempfile.TemporaryDirectory() as temporary:
             run_dir = Path(temporary, "run")

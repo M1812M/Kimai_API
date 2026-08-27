@@ -35,6 +35,7 @@ DEFAULT_OUTPUT_ROOT = Path("data") / "clockify-backups"
 EARLIEST = datetime(1970, 1, 1, tzinfo=timezone.utc)
 PAGE_SIZE = 200
 REPORT_PAGE_SIZE = 1000
+MAX_CHANGE_RANGE = timedelta(days=366)
 ENTITY_TYPES = (
     "CLIENTS",
     "PROJECTS",
@@ -1092,6 +1093,30 @@ def fetch_entity_changes_adaptive(
                 *probe_rows,
             ]
         )
+    if end - start > MAX_CHANGE_RANGE:
+        midpoint, _ = _split_range(start, end)
+        return deduplicate(
+            [
+                *fetch_entity_changes_adaptive(
+                    session,
+                    workspace_id,
+                    change_kind,
+                    start,
+                    midpoint,
+                    namespace=namespace,
+                    capability_probe=False,
+                ),
+                *fetch_entity_changes_adaptive(
+                    session,
+                    workspace_id,
+                    change_kind,
+                    midpoint,
+                    end,
+                    namespace=namespace,
+                    capability_probe=False,
+                ),
+            ]
+        )
     label = _range_label(start, end)
     key = f"{workspace_id}/{namespace}/{change_kind}/{label}"
     try:
@@ -1174,6 +1199,26 @@ def fetch_audit_log_adaptive(
                     capability_probe=False,
                 ),
                 *probe_rows,
+            ]
+        )
+    if end - start > MAX_CHANGE_RANGE:
+        midpoint, _ = _split_range(start, end)
+        return deduplicate(
+            [
+                *fetch_audit_log_adaptive(
+                    session,
+                    workspace_id,
+                    start,
+                    midpoint,
+                    capability_probe=False,
+                ),
+                *fetch_audit_log_adaptive(
+                    session,
+                    workspace_id,
+                    midpoint,
+                    end,
+                    capability_probe=False,
+                ),
             ]
         )
     label = _range_label(start, end)
