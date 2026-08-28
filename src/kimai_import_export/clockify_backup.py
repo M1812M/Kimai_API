@@ -35,7 +35,7 @@ DEFAULT_OUTPUT_ROOT = Path("data") / "clockify-backups"
 EARLIEST = datetime(1970, 1, 1, tzinfo=timezone.utc)
 PAGE_SIZE = 200
 REPORT_PAGE_SIZE = 1000
-MAX_REPORT_RANGE = timedelta(days=21)
+MAX_REPORT_RANGE = timedelta(days=1)
 MAX_CHANGE_RANGE = timedelta(days=92)
 ENTITY_TYPES = (
     "CLIENTS",
@@ -1067,6 +1067,11 @@ def fetch_detailed_report_adaptive(
         )
     label = _range_label(start, end)
     key = f"{workspace_id}/detailed-report-json/{label}"
+    completed = session.load_completed_items(
+        key, item_keys=("timeentries", "timeEntries")
+    )
+    if completed is not None:
+        return deduplicate(completed)
     if end - start > MAX_REPORT_RANGE:
         midpoint, _ = _split_range(start, end)
         return deduplicate(

@@ -316,6 +316,9 @@ class BackupSessionTests(unittest.TestCase):
                 self.calls += 1
                 raise HttpFailure(400, "POST", "detailed", "not available")
 
+            def load_completed_items(self, *args, **kwargs):
+                return None
+
             def _record_gap(self, key, *args, **kwargs):
                 self.manifest["datasets"][key] = {"status": "failed"}
 
