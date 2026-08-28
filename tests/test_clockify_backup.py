@@ -145,6 +145,16 @@ class BackupSessionTests(unittest.TestCase):
                         "projectId": "p1",
                         "timeInterval": interval,
                     },
+                    {
+                        "id": "zero-duration",
+                        "userId": "u1",
+                        "projectId": "p1",
+                        "taskId": "t1",
+                        "timeInterval": {
+                            "start": "2026-01-01T08:00:00Z",
+                            "end": "2026-01-01T08:00:00Z",
+                        },
+                    },
                 ],
                 {},
             )
@@ -155,7 +165,7 @@ class BackupSessionTests(unittest.TestCase):
 
             self.assertEqual(["valid"], [row["Clockify Entry ID"] for row in rows])
             jsonl_path = csv_path.with_suffix(".jsonl")
-            self.assertEqual(2, len(jsonl_path.read_text(encoding="utf-8").splitlines()))
+            self.assertEqual(3, len(jsonl_path.read_text(encoding="utf-8").splitlines()))
 
     def test_resume_skips_only_a_completed_workspace_snapshot(self):
         manifest = {"workspaces": {"done": {"status": "complete"}}}

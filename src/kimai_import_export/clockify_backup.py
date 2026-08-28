@@ -1467,7 +1467,7 @@ def normalize_workspace(
             interval = interval if isinstance(interval, Mapping) else {}
             start = _parse_api_datetime(interval.get("start"))
             end = _parse_api_datetime(interval.get("end"))
-            if start is None or end is None:
+            if start is None or end is None or end <= start:
                 continue
             user_id = clean(item.get("userId"))
             project_id = clean(item.get("projectId"))
