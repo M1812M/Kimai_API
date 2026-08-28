@@ -35,7 +35,7 @@ DEFAULT_OUTPUT_ROOT = Path("data") / "clockify-backups"
 EARLIEST = datetime(1970, 1, 1, tzinfo=timezone.utc)
 PAGE_SIZE = 200
 REPORT_PAGE_SIZE = 1000
-MAX_REPORT_RANGE = timedelta(days=366)
+MAX_REPORT_RANGE = timedelta(days=21)
 MAX_CHANGE_RANGE = timedelta(days=92)
 ENTITY_TYPES = (
     "CLIENTS",
