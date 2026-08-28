@@ -978,7 +978,36 @@ def fetch_detailed_report_adaptive(
     workspace_id: str,
     start: datetime,
     end: datetime,
+    *,
+    capability_probe: bool = True,
 ) -> list[dict[str, Any]]:
+    if capability_probe and end - start > timedelta(days=1):
+        probe_start = max(start, end - timedelta(days=1))
+        probe_rows = fetch_detailed_report_adaptive(
+            session,
+            workspace_id,
+            probe_start,
+            end,
+            capability_probe=False,
+        )
+        probe_key = (
+            f"{workspace_id}/detailed-report-json/"
+            f"{_range_label(probe_start, end)}"
+        )
+        if session.manifest["datasets"].get(probe_key, {}).get("status") != "complete":
+            return probe_rows
+        return deduplicate(
+            [
+                *fetch_detailed_report_adaptive(
+                    session,
+                    workspace_id,
+                    start,
+                    end,
+                    capability_probe=False,
+                ),
+                *probe_rows,
+            ]
+        )
     label = _range_label(start, end)
     key = f"{workspace_id}/detailed-report-json/{label}"
     body = {
@@ -1017,9 +1046,19 @@ def fetch_detailed_report_adaptive(
         return deduplicate(
             [
                 *fetch_detailed_report_adaptive(
-                    session, workspace_id, start, midpoint
+                    session,
+                    workspace_id,
+                    start,
+                    midpoint,
+                    capability_probe=False,
                 ),
-                *fetch_detailed_report_adaptive(session, workspace_id, midpoint, end),
+                *fetch_detailed_report_adaptive(
+                    session,
+                    workspace_id,
+                    midpoint,
+                    end,
+                    capability_probe=False,
+                ),
             ]
         )
 

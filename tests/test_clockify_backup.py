@@ -20,6 +20,7 @@ from kimai_import_export.clockify_backup import (
     extract_items,
     finalize_backup,
     fetch_audit_log_adaptive,
+    fetch_detailed_report_adaptive,
     fetch_entity_changes_adaptive,
     fetch_time_entries_adaptive,
     internal_verification,
@@ -288,6 +289,30 @@ class BackupSessionTests(unittest.TestCase):
 
         session = FakeSession()
         rows = fetch_audit_log_adaptive(
+            session,
+            "ws1",
+            datetime(1970, 1, 1, tzinfo=timezone.utc),
+            datetime(2026, 1, 1, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual([], rows)
+        self.assertEqual(1, session.calls)
+
+    def test_failed_recent_report_probe_prevents_historical_request_storm(self):
+        class FakeSession:
+            def __init__(self):
+                self.calls = 0
+                self.manifest = {"datasets": {}}
+
+            def fetch_post_collection(self, key, *args, **kwargs):
+                self.calls += 1
+                raise HttpFailure(400, "POST", "detailed", "not available")
+
+            def _record_gap(self, key, *args, **kwargs):
+                self.manifest["datasets"][key] = {"status": "failed"}
+
+        session = FakeSession()
+        rows = fetch_detailed_report_adaptive(
             session,
             "ws1",
             datetime(1970, 1, 1, tzinfo=timezone.utc),
