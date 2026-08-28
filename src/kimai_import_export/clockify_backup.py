@@ -1475,6 +1475,11 @@ def normalize_workspace(
             user = users_by_id.get(user_id, {})
             project = projects_by_id.get(project_id, {})
             task = tasks_by_id.get(task_id, {})
+            project_name = clean(project.get("name"))
+            task_name = clean(task.get("name"))
+            user_email = clean(user.get("email"))
+            if not project_name or not task_name or not user_email:
+                continue
             tag_names = [
                 clean(tags_by_id.get(clean(tag_id), {}).get("name")) or clean(tag_id)
                 for tag_id in item.get("tagIds", [])
@@ -1482,10 +1487,10 @@ def normalize_workspace(
             ]
             writer.writerow(
                 {
-                    "Project": clean(project.get("name")),
-                    "Task": clean(task.get("name")),
+                    "Project": project_name,
+                    "Task": task_name,
                     "User": clean(user.get("name")),
-                    "Email": clean(user.get("email")),
+                    "Email": user_email,
                     "Start Date": start.date().isoformat(),
                     "Start Time": start.time().isoformat(),
                     "End Date": end.date().isoformat(),

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import csv
 import io
 import json
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 from urllib.error import HTTPError
 
@@ -24,6 +26,7 @@ from kimai_import_export.clockify_backup import (
     fetch_entity_changes_adaptive,
     fetch_time_entries_adaptive,
     internal_verification,
+    normalize_workspace,
     redact_secrets,
     verify_backup,
     workspace_needs_snapshot,
@@ -113,6 +116,47 @@ class ReadOnlyClientTests(unittest.TestCase):
 
 
 class BackupSessionTests(unittest.TestCase):
+    def test_normalized_csv_contains_only_kimai_importable_rows(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            session = SimpleNamespace(run_dir=Path(temporary))
+            interval = {
+                "start": "2026-01-01T08:00:00Z",
+                "end": "2026-01-01T09:00:00Z",
+            }
+            normalize_workspace(
+                session,
+                "ws1",
+                [{"id": "u1", "name": "User", "email": "user@example.org"}],
+                [{"id": "p1", "name": "Project"}],
+                [{"id": "t1", "name": "Task"}],
+                [],
+                [],
+                [
+                    {
+                        "id": "valid",
+                        "userId": "u1",
+                        "projectId": "p1",
+                        "taskId": "t1",
+                        "timeInterval": interval,
+                    },
+                    {
+                        "id": "missing-task",
+                        "userId": "u1",
+                        "projectId": "p1",
+                        "timeInterval": interval,
+                    },
+                ],
+                {},
+            )
+
+            csv_path = Path(temporary, "normalized", "ws1", "time-entries.csv")
+            with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+
+            self.assertEqual(["valid"], [row["Clockify Entry ID"] for row in rows])
+            jsonl_path = csv_path.with_suffix(".jsonl")
+            self.assertEqual(2, len(jsonl_path.read_text(encoding="utf-8").splitlines()))
+
     def test_resume_skips_only_a_completed_workspace_snapshot(self):
         manifest = {"workspaces": {"done": {"status": "complete"}}}
 
