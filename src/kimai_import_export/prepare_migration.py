@@ -457,7 +457,7 @@ def fetch_clockify_time_entries(
                     billable=bool(raw.get("billable")),
                     tags="; ".join(
                         tag_by_id.get(clean(tag_id), clean(tag_id))
-                        for tag_id in raw.get("tagIds", [])
+                        for tag_id in (raw.get("tagIds") or [])
                         if clean(tag_id)
                     ),
                 )

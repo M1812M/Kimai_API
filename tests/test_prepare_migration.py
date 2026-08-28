@@ -256,7 +256,19 @@ class PreparationWorkflowTests(unittest.TestCase):
                                 "start": "2026-01-02T03:00:15Z",
                                 "end": "2026-01-02T04:00:15Z",
                             },
-                        }
+                        },
+                        {
+                            "id": "ce2",
+                            "projectId": "cp1",
+                            "taskId": "ct1",
+                            "tagIds": None,
+                            "description": "Work without tags",
+                            "billable": True,
+                            "timeInterval": {
+                                "start": "2026-01-03T03:00:15Z",
+                                "end": "2026-01-03T04:00:15Z",
+                            },
+                        },
                     ]
                 raise AssertionError(f"Unexpected Clockify collection: {endpoint}")
 
@@ -342,6 +354,7 @@ class PreparationWorkflowTests(unittest.TestCase):
                 audit_rows = list(csv.DictReader(handle))
             self.assertEqual("mapped_review_required", audit_rows[0]["Audit Status"])
             self.assertEqual("Migration", audit_rows[0]["Tags"])
+            self.assertEqual("", audit_rows[1]["Tags"])
 
 
 if __name__ == "__main__":
