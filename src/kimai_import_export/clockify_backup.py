@@ -2224,6 +2224,15 @@ def load_clockify_key(env_path: Path) -> str:
     return key
 
 
+def workspace_needs_snapshot(
+    manifest: Mapping[str, Any], workspace_id: str, *, resume: bool
+) -> bool:
+    if not resume:
+        return True
+    workspace = manifest.get("workspaces", {}).get(workspace_id, {})
+    return workspace.get("status") != "complete"
+
+
 def build_backup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Create a complete, read-only Clockify emergency backup."
@@ -2308,6 +2317,11 @@ def backup_main(argv: Sequence[str] | None = None) -> int:
         session.manifest["selected_workspace_ids"] = [object_id(item) for item in selected]
         session.save_manifest()
         for workspace in selected:
+            workspace_id = object_id(workspace)
+            if not workspace_needs_snapshot(
+                session.manifest, workspace_id, resume=bool(args.resume)
+            ):
+                continue
             backup_workspace(session, workspace, cutoff)
         closing_delta(session, cutoff)
         return finalize_backup(session)

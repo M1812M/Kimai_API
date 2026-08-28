@@ -26,6 +26,7 @@ from kimai_import_export.clockify_backup import (
     internal_verification,
     redact_secrets,
     verify_backup,
+    workspace_needs_snapshot,
 )
 
 
@@ -112,6 +113,13 @@ class ReadOnlyClientTests(unittest.TestCase):
 
 
 class BackupSessionTests(unittest.TestCase):
+    def test_resume_skips_only_a_completed_workspace_snapshot(self):
+        manifest = {"workspaces": {"done": {"status": "complete"}}}
+
+        self.assertFalse(workspace_needs_snapshot(manifest, "done", resume=True))
+        self.assertTrue(workspace_needs_snapshot(manifest, "missing", resume=True))
+        self.assertTrue(workspace_needs_snapshot(manifest, "done", resume=False))
+
     @patch("kimai_import_export.clockify_backup.time.sleep")
     def test_atomic_write_retries_a_temporary_windows_file_lock(self, mocked_sleep):
         with tempfile.TemporaryDirectory() as temporary:
