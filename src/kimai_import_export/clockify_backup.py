@@ -35,6 +35,7 @@ DEFAULT_OUTPUT_ROOT = Path("data") / "clockify-backups"
 EARLIEST = datetime(1970, 1, 1, tzinfo=timezone.utc)
 PAGE_SIZE = 200
 REPORT_PAGE_SIZE = 1000
+MAX_REPORT_RANGE = timedelta(days=366)
 MAX_CHANGE_RANGE = timedelta(days=92)
 ENTITY_TYPES = (
     "CLIENTS",
@@ -996,12 +997,68 @@ def fetch_detailed_report_adaptive(
         )
         if session.manifest["datasets"].get(probe_key, {}).get("status") != "complete":
             return probe_rows
+        bounds = session.manifest.setdefault("report_bounds", {})
+        bound_record = bounds.get(workspace_id, {})
+        effective_start_text = clean(bound_record.get("earliest_supported_utc"))
+        if effective_start_text:
+            effective_start = parse_utc(effective_start_text)
+        else:
+            oldest_end = min(end, start + timedelta(days=1))
+            fetch_detailed_report_adaptive(
+                session,
+                workspace_id,
+                start,
+                oldest_end,
+                capability_probe=False,
+            )
+            oldest_key = (
+                f"{workspace_id}/detailed-report-json/"
+                f"{_range_label(start, oldest_end)}"
+            )
+            if (
+                session.manifest["datasets"].get(oldest_key, {}).get("status")
+                == "complete"
+            ):
+                effective_start = start
+            else:
+                unsupported = start
+                supported = probe_start
+                while supported - unsupported > timedelta(seconds=1):
+                    midpoint, _ = _split_range(unsupported, supported)
+                    midpoint_end = min(end, midpoint + timedelta(days=1))
+                    fetch_detailed_report_adaptive(
+                        session,
+                        workspace_id,
+                        midpoint,
+                        midpoint_end,
+                        capability_probe=False,
+                    )
+                    midpoint_key = (
+                        f"{workspace_id}/detailed-report-json/"
+                        f"{_range_label(midpoint, midpoint_end)}"
+                    )
+                    if (
+                        session.manifest["datasets"]
+                        .get(midpoint_key, {})
+                        .get("status")
+                        == "complete"
+                    ):
+                        supported = midpoint
+                    else:
+                        unsupported = midpoint
+                effective_start = supported
+            bounds[workspace_id] = {
+                "requested_start_utc": iso_z(start),
+                "earliest_supported_utc": iso_z(effective_start),
+                "determined_at_utc": iso_z(utc_now()),
+            }
+            session.save_manifest()
         return deduplicate(
             [
                 *fetch_detailed_report_adaptive(
                     session,
                     workspace_id,
-                    start,
+                    effective_start,
                     end,
                     capability_probe=False,
                 ),
@@ -1010,6 +1067,26 @@ def fetch_detailed_report_adaptive(
         )
     label = _range_label(start, end)
     key = f"{workspace_id}/detailed-report-json/{label}"
+    if end - start > MAX_REPORT_RANGE:
+        midpoint, _ = _split_range(start, end)
+        return deduplicate(
+            [
+                *fetch_detailed_report_adaptive(
+                    session,
+                    workspace_id,
+                    start,
+                    midpoint,
+                    capability_probe=False,
+                ),
+                *fetch_detailed_report_adaptive(
+                    session,
+                    workspace_id,
+                    midpoint,
+                    end,
+                    capability_probe=False,
+                ),
+            ]
+        )
     body = {
         "dateRangeStart": iso_z(start),
         "dateRangeEnd": iso_z(end),
